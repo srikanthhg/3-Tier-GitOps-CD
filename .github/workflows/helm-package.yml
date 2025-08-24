@@ -14,15 +14,15 @@ jobs:
           chart_name: ${{ steps.fetch_path.outputs.chart_name }}
           version: ${{ steps.version_fetch.outputs.version }}
         runs-on: ubuntu-latest
-        permissions:
-          contents: read
-          packages: write
+        # permissions:
+        #   contents: read
+        #   packages: write
         steps:
           - name: Checkout repo
             uses: actions/checkout@v4
             with:
               repository: 'srikanthhg/3-Tier-GitOps-CD'
-              token: ${{ secrets.GITHUB_TOKEN }}
+              token: ${{ secrets.GH_PAT2 }}
               fetch-depth: 2
               ref: main
 
@@ -54,7 +54,7 @@ jobs:
 
           - name: Set up Helm registry login
             run: |
-                echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io --username ${{ github.actor }}  --password-stdin
+                echo "${{ secrets.GH_PAT2 }}" | helm registry login ghcr.io --username ${{ github.actor }}  --password-stdin
 
           - name: Push Helm Chart(s) to Github container registry
             run: |
