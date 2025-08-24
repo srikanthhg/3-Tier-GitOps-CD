@@ -65,3 +65,17 @@ jobs:
                 echo "🚀 Pushing the helm package ${chartName}"
                 helm push ${chartName} ${{ env.registry_name }}
                 echo -e "###📦 Package Published Details: \n ${chartName}" >> $GITHUB_STEP_SUMMARY
+
+
+          - name: Verify Helm Chart upload
+            run: |
+              version=25.03.${{ github.run_number }}
+              chart=${{ steps.fetch_path.outputs.chart_name }}
+              
+              echo "✅ Verifying helm chart pull for $chart:$version"
+              rm -rf verify_chart
+              mkdir verify_chart
+              helm pull ${{ env.registry_name }}/$chart --version $version --untar -d verify_chart
+
+              echo "Contents of pulled chart:"
+              ls -R verify_chart
