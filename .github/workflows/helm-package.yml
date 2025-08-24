@@ -9,8 +9,10 @@ env:
 
 jobs:
     publish-helm:
-        # outputs:
-          # steps.fetch_path.outputs.
+        outputs:
+          chart_path: ${{ steps.fetch_path.outputs.chart_path }}
+          chart_name: ${{ steps.fetch_path.outputs.chart_name }}
+          version: ${{ steps.version_fetch.outputs.version }}
         runs-on: ubuntu-latest
         steps:
           - name: Checkout repo
