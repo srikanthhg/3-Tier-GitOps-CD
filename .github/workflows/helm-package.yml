@@ -15,6 +15,11 @@ jobs:
         steps:
           - name: Checkout repo
             uses: actions/checkout@v4
+            with:
+              repository: 'srikanthhg/3-Tier-GitOps-CD'
+              token: ${{ secrets.GITHUB_TOKEN }}
+              fetch-depth: 2
+              ref: main
 
           - name: Install Helm
             uses: azure/setup-helm@v4
@@ -24,7 +29,6 @@ jobs:
           - name: Detect changed chart(s)
             id: fetch_path
             run: |
-                # List changed files in charts/ folder
                 git diff --name-only ${{ github.event.before }} ${{ github.sha }} > modified_files.txt
                 cat modified_files.txt
                 cp scripts/extract_chart_path.sh .
