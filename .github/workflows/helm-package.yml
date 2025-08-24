@@ -60,7 +60,7 @@ jobs:
             run: |
                 version=25.03.${{github.run_number}}
                 chartName=${{ steps.fetch_path.outputs.chart_name }}-${version}.tgz
-                # tar -xvf ${chartName}
+                tar -xvf ${chartName}
                 echo ${chartName}
                 echo "🚀 Pushing the helm package ${chartName}"
                 helm push ${chartName} ${{ env.registry_name }}
