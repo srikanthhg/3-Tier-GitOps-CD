@@ -1,0 +1,52 @@
+name: package helm chart
+
+on:
+    push: 
+        branches: ["main"]
+
+env:
+    registry_name: "oci://ghcr.io/srikanthhg"
+
+jobs:
+    publish-helm:
+        runs-on: ubuntu-latest
+        steps:
+          - name: Checkout repo
+            uses: actions/checkout@v4
+
+          - name: Install Helm
+            uses: azure/setup-helm@v4
+            with:
+                version: v3.15.2
+            
+          - name: Set up Helm registry login
+            run: |
+                echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io --username ${{ github.actor }}  --password-stdin
+        
+          - name: Detect changed chart(s)
+            id: changed
+            run: |
+                # List changed files in charts/ folder
+                CHANGED_FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} -- charts/ || true)
+
+                # Extract top-level chart dirs
+                CHANGED_CHARTS=$(echo "$CHANGED_FILES" | cut -d'/' -f2 | sort -u)
+
+                echo "Changed charts: $CHANGED_CHARTS"
+
+                # Pass list as output
+                echo "charts=$CHANGED_CHARTS" >> $GITHUB_OUTPUT
+
+          - name: Package & Push Helm Chart(s)
+            if: steps.changed.outputs.charts != ''
+            run: |
+                version=25.0.${{github.run_number}}
+                for chart in ${{ steps.changed.outputs.charts }}; do
+                    echo "📦 Packaging chart: $chart"
+                    helm dependency update charts/$chart
+                    helm package charts/$chart-${version} --destination .
+                    
+                    FILE=$(ls ${chart}-${version}*.tgz)
+                    echo "🚀 Pushing $FILE"
+                    helm push "$FILE" oci://ghcr.io/${{ github.repository_owner }}/helm
+                done
