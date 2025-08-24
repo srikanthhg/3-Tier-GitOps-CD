@@ -9,7 +9,7 @@ env:
 
 jobs:
     publish-helm:
-        outputs:
+        # outputs:
           # steps.fetch_path.outputs.
         runs-on: ubuntu-latest
         steps:
@@ -33,16 +33,16 @@ jobs:
                 cat modified_files.txt
 
 
-          - name: Package & Push Helm Chart(s)
-            if: steps.changed.outputs.charts != ''
-            run: |
-                version=25.0.${{github.run_number}}
-                for chart in ${{ steps.changed.outputs.charts }}; do
-                    echo "📦 Packaging chart: $chart"
-                    helm dependency update charts/$chart
-                    helm package charts/$chart-${version} --destination .
+          # - name: Package & Push Helm Chart(s)
+          #   if: steps.changed.outputs.charts != ''
+          #   run: |
+          #       version=25.0.${{github.run_number}}
+          #       for chart in ${{ steps.changed.outputs.charts }}; do
+          #           echo "📦 Packaging chart: $chart"
+          #           helm dependency update charts/$chart
+          #           helm package charts/$chart-${version} --destination .
                     
-                    FILE=$(ls ${chart}-${version}*.tgz)
-                    echo "🚀 Pushing $FILE"
-                    helm push "$FILE" oci://ghcr.io/${{ github.repository_owner }}/helm
-                done
+          #           FILE=$(ls ${chart}-${version}*.tgz)
+          #           echo "🚀 Pushing $FILE"
+          #           helm push "$FILE" oci://ghcr.io/${{ github.repository_owner }}/helm
+          #       done
