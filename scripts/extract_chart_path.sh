@@ -1,6 +1,6 @@
 count=$(cat modified_files.txt | wc -l)
 
-if [ "$count" -eq 1 ]: then
+if [ "$count" -eq 1 ]; then
 result=$(cat modified_files.txt | awk -F '/' '{print $1"/"$2}')
 echo $result
 else
