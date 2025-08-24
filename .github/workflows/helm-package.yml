@@ -9,6 +9,8 @@ env:
 
 jobs:
     publish-helm:
+        outputs:
+          # steps.fetch_path.outputs.
         runs-on: ubuntu-latest
         steps:
           - name: Checkout repo
@@ -24,18 +26,12 @@ jobs:
                 echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io --username ${{ github.actor }}  --password-stdin
         
           - name: Detect changed chart(s)
-            id: changed
+            id: fetch_path
             run: |
                 # List changed files in charts/ folder
-                CHANGED_FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} -- charts/ || true)
+                git diff --name-only ${{ github.event.before }} ${{ github.sha }} > modified_files.txt
+                cat modified_files.txt
 
-                # Extract top-level chart dirs
-                CHANGED_CHARTS=$(echo "$CHANGED_FILES" | cut -d'/' -f2 | sort -u)
-
-                echo "Changed charts: $CHANGED_CHARTS"
-
-                # Pass list as output
-                echo "charts=$CHANGED_CHARTS" >> $GITHUB_OUTPUT
 
           - name: Package & Push Helm Chart(s)
             if: steps.changed.outputs.charts != ''
