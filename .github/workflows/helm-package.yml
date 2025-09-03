@@ -35,7 +35,7 @@ jobs:
             id: fetch_path
             run: |
                 git diff --name-only ${{ github.event.before }} ${{ github.sha }} > modified_files.txt
-                # cat modified_files.txt
+                cat modified_files.txt
                 cp scripts/extract_chart_path.sh .
                 chart_path=$(sh extract_chart_path.sh)
                 chart_name=$(sh extract_chart_path.sh | awk -F '/' '{print $2}')
@@ -80,3 +80,4 @@ jobs:
               echo "Contents of pulled chart:"
 
               ls -R verify_chart
+
