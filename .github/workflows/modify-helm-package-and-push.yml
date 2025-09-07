@@ -25,6 +25,8 @@ jobs:
           ls -la
           tar -xvzf ${{ inputs.chart_name }}-${{ inputs.chart_version }}.tgz
           ls -la
+          cd ${{ inputs.chart_name }}
+          cat values.yaml
       
       # - name: upload Artifact
       #   uses: actions/upload-artifact@v4
