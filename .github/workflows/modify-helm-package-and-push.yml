@@ -32,6 +32,7 @@ jobs:
           yq -i '.image.tag = "latest"' backend-img/values.yaml
 
           cd ${{ inputs.chart_name }}
+          cat values.yaml
           ls -la
 
       
