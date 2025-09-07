@@ -23,6 +23,9 @@ jobs:
           echo "${{ secrets.GH_PAT2 }}" | helm registry login ghcr.io --username ${{ github.actor }}  --password-stdin
           helm pull ${{ env.registry }}/${{ inputs.chart_name }} --version ${{ inputs.chart_version }}
           ls -la
+
+      - name: modifying values file
+        run: |
           tar -xvzf ${{ inputs.chart_name }}-${{ inputs.chart_version }}.tgz
           ls -la
           cd ${{ inputs.chart_name }}
@@ -30,17 +33,25 @@ jobs:
           cd ..
           curl -sL https://github.com/mikefarah/yq/releases/download/v4.44.3/yq_linux_amd64 -o yq && sudo install yq /usr/local/bin/yq
           yq -i '.image.tag = "latest"' backend-img/values.yaml
-
           cd ${{ inputs.chart_name }}
           cat values.yaml
           ls -la
-
       
-      # - name: upload Artifact
-      #   uses: actions/upload-artifact@v4
-      #   with:
-      #     name: ${{ inputs.chart_name }}-${{ inputs.chart_version }}.tgz
-      #     path: "./${{ inputs.chart_name }}-${{ inputs.chart_version }}.tgz"
+      - name: package and push
+        run: |
+          cd ..
+          ls -la
+          helm lint ${{ inputs.chart_name }}
+          rm -rf ${{ inputs.chart_name }}-${{ inputs.chart_version }}.tgz
+          helm package ./${{ inputs.chart_name }}-${{ inputs.chart_version }}.tgz
+          ls -la
+          helm push ${{ inputs.chart_name }}-${{ inputs.chart_version }}.tgz ${{ env.registry }}
+      
+      - name: upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.chart_name }}-${{ inputs.chart_version }}.tgz
+          path: "./${{ inputs.chart_name }}-${{ inputs.chart_version }}.tgz"
         
         
           
