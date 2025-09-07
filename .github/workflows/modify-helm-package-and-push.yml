@@ -39,11 +39,11 @@ jobs:
       
       - name: package and push
         run: |
-          cd ..
+          # cd ..
           ls -la
           rm -rf ${{ inputs.chart_name }}-${{ inputs.chart_version }}.tgz
           helm lint ./${{ inputs.chart_name }}
-          helm package ./${{ inputs.chart_name }}-${{ inputs.chart_version }}.tgz
+          helm package ./${{ inputs.chart_name }} --version ${{ inputs.chart_version }}
           ls -la
           helm push ${{ inputs.chart_name }}-${{ inputs.chart_version }}.tgz ${{ env.registry }}
       
