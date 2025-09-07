@@ -20,7 +20,7 @@ jobs:
     steps:
       - name: login to GHCR
         run: |
-          echo ${{ secrets.GH_PAT2 }}|helm registry login ghcr.io ${{ github.actor }} --password-stdin
+          echo ${{ secrets.GH_PAT2 }} | helm registry login ghcr.io ${{ github.actor }} --password-stdin
           helm pull ${{ env.registry }}/${{ inputs.chart_name }} --version ${{ inputs.chart_version }}
           ls -la
           tar -xvzf ${{ inputs.chart_name }}-${{ inputs.chart_version }}.tgz
