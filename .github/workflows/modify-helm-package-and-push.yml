@@ -41,8 +41,8 @@ jobs:
         run: |
           cd ..
           ls -la
-          helm lint ${{ inputs.chart_name }}
           rm -rf ${{ inputs.chart_name }}-${{ inputs.chart_version }}.tgz
+          helm lint ./${{ inputs.chart_name }}
           helm package ./${{ inputs.chart_name }}-${{ inputs.chart_version }}.tgz
           ls -la
           helm push ${{ inputs.chart_name }}-${{ inputs.chart_version }}.tgz ${{ env.registry }}
