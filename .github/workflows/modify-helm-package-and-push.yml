@@ -1,0 +1,37 @@
+name: Modify helm package and push
+
+run-name: Modify helm package
+
+on:
+  workflow_dispatch: 
+    inputs:
+      chart_name:
+        required: true
+        type: string
+      chart_version:
+        required: true
+        type: string
+
+env:
+  registry: ghcr.io/srikanthhg
+jobs:
+  pull-chart:
+    runs-on: ubuntu-latest
+    steps:
+      - name: login to GHCR
+        run: |
+          echo ${{ secrets.GITHUB_TOKEN }} | helm registry login ghcr.io ${{ github.actor }} --password-stdin
+          helm pull ${{ env.registry }}/${{ inputs.chart_name }} --version ${{ inputs.chart_version }}
+          ls -la
+          tar -xvzf ${{ inputs.chart_name }}-${{ inputs.chart_version }}.tgz
+          ls -la
+      
+      # - name: upload Artifact
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: ${{ inputs.chart_name }}-${{ inputs.chart_version }}.tgz
+      #     path: "./${{ inputs.chart_name }}-${{ inputs.chart_version }}.tgz"
+        
+        
+          
+    
