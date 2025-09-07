@@ -1,8 +1,14 @@
 name: package helm chart
 
 on:
-    push: 
+    push:
         branches: ["main"]
+    workflow_dispatch: 
+      inputs:
+        update-helm-values:
+          type: boolean
+          required: false
+
 
 env:
     registry_name: "oci://ghcr.io/srikanthhg"
@@ -44,6 +50,13 @@ jobs:
                 echo "chart_path=$chart_path" >> $GITHUB_OUTPUT
                 echo "chart_name=$chart_name" >> $GITHUB_OUTPUT
           
+          - name: Update helm values file
+            if: inputs.update-helm-values == 'true'
+            run: |
+              curl -sL https://github.com/mikefarah/yq/releases/download/v4.44.3/yq_linux_amd64 -o yq && sudo install yq /usr/local/bin/yq
+              yq -i '.image.tag = "latest"' backend-img/values.yaml
+              cat values.yaml
+
           - name: Package Helm Chart
             id: version_fetch
             run: |
