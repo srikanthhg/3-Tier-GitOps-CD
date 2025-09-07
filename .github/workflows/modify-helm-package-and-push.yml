@@ -13,7 +13,7 @@ on:
         type: string
 
 env:
-  registry: ghcr.io/srikanthhg
+  registry: "oci://ghcr.io/srikanthhg"
 jobs:
   pull-chart:
     runs-on: ubuntu-latest
