@@ -23,7 +23,7 @@ jobs:
           echo "${{ secrets.GH_PAT2 }}" | helm registry login ghcr.io --username ${{ github.actor }}  --password-stdin
           helm pull ${{ env.registry }}/${{ inputs.chart_name }} --version ${{ inputs.chart_version }}
           ls -la
-          echo "new_tag=latestttt >> $GITHUB_ENV
+          echo "new_tag=latestttt" >> $GITHUB_ENV
           echo $new_tag
 
       - name: modifying values file
@@ -60,6 +60,7 @@ jobs:
           
 
     
+
 
 
 
