@@ -35,7 +35,7 @@ jobs:
           cd ..
           echo $new_tag
           curl -sL https://github.com/mikefarah/yq/releases/download/v4.44.3/yq_linux_amd64 -o yq && sudo install yq /usr/local/bin/yq
-          yq -i ".image.tag = \"${new_tag}\"" backend-img/values.yaml
+          yq -i ".image.tag = \"$new_tag\"" backend-img/values.yaml
           cd ${{ inputs.chart_name }}
           cat values.yaml
           ls -la
@@ -60,6 +60,7 @@ jobs:
           
 
     
+
 
 
 
