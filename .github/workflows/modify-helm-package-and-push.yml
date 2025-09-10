@@ -23,7 +23,7 @@ jobs:
           echo "${{ secrets.GH_PAT2 }}" | helm registry login ghcr.io --username ${{ github.actor }}  --password-stdin
           helm pull ${{ env.registry }}/${{ inputs.chart_name }} --version ${{ inputs.chart_version }}
           ls -la
-          new_tag=`echo latest`
+          new_tag=`echo latest` >> $GITHUB_ENV
           echo $new_tag
 
       - name: modifying values file
@@ -33,6 +33,7 @@ jobs:
           cd ${{ inputs.chart_name }}
           cat values.yaml
           cd ..
+          echo $new_tag
           curl -sL https://github.com/mikefarah/yq/releases/download/v4.44.3/yq_linux_amd64 -o yq && sudo install yq /usr/local/bin/yq
           yq -i '.image.tag = "$newtag"' backend-img/values.yaml
           cd ${{ inputs.chart_name }}
@@ -59,3 +60,4 @@ jobs:
           
 
     
+
