@@ -23,6 +23,8 @@ jobs:
           echo "${{ secrets.GH_PAT2 }}" | helm registry login ghcr.io --username ${{ github.actor }}  --password-stdin
           helm pull ${{ env.registry }}/${{ inputs.chart_name }} --version ${{ inputs.chart_version }}
           ls -la
+          new_tag=`echo latest`
+          echo $new_tag
 
       - name: modifying values file
         run: |
@@ -32,27 +34,28 @@ jobs:
           cat values.yaml
           cd ..
           curl -sL https://github.com/mikefarah/yq/releases/download/v4.44.3/yq_linux_amd64 -o yq && sudo install yq /usr/local/bin/yq
-          yq -i '.image.tag = "latest"' backend-img/values.yaml
+          yq -i '.image.tag = "$newtag"' backend-img/values.yaml
           cd ${{ inputs.chart_name }}
           cat values.yaml
           ls -la
       
-      - name: package and push
-        run: |
-          # cd ..
-          ls -la
-          rm -rf ${{ inputs.chart_name }}-${{ inputs.chart_version }}.tgz
-          helm lint ./${{ inputs.chart_name }}
-          helm package ./${{ inputs.chart_name }} --version ${{ inputs.chart_version }}
-          ls -la
-          helm push ${{ inputs.chart_name }}-${{ inputs.chart_version }}.tgz ${{ env.registry }}
+      # - name: package and push
+      #   run: |
+      #     # cd ..
+      #     ls -la
+      #     rm -rf ${{ inputs.chart_name }}-${{ inputs.chart_version }}.tgz
+      #     helm lint ./${{ inputs.chart_name }}
+      #     helm package ./${{ inputs.chart_name }} --version ${{ inputs.chart_version }}
+      #     ls -la
+      #     helm push ${{ inputs.chart_name }}-${{ inputs.chart_version }}.tgz ${{ env.registry }}
       
-      - name: upload Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ inputs.chart_name }}-${{ inputs.chart_version }}.tgz
-          path: "./${{ inputs.chart_name }}-${{ inputs.chart_version }}.tgz"
+      # - name: upload Artifact
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: ${{ inputs.chart_name }}-${{ inputs.chart_version }}.tgz
+      #     path: "./${{ inputs.chart_name }}-${{ inputs.chart_version }}.tgz"
         
         
           
+
     
