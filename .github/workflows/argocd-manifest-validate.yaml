@@ -24,7 +24,7 @@ jobs:
         uses: azure/k8s-lint@v3
         with:
           lintType: kubeconform
-          manifests: 'argocd-manifests/*.yaml' # Adjust to your manifest path
+          manifests: './argocd-manifests/*.yaml' # Adjust to your manifest path
           kubeconformOpts: '-summary'
         continue-on-error: true
       
