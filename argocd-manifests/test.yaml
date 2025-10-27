@@ -1,43 +1,43 @@
-# apiVersion: argoproj.io/v1alpha1
-# kind: Application
-# metadata:
-#   name: mytestapp
-#   namespace: argocd
-# spec:
-#   destination:
-#     namespace: test
-#     server: https://kubernetes.default.svc
-#   source:
-#     repoURL: ghcr.io/srikanthhg   # OCI repo
-#     chart: frontend-img                # Chart name
-#     targetRevision: 25.03.79            # Version
-#   project: default
-#   syncPolicy:
-#     automated:
-#       prune: true
-#       selfHeal: true
-#     syncOptions:
-#       - CreateNamespace=true
----
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
   name: mytestapp
   namespace: argocd
 spec:
-  project: default
-  source:
-    repoURL: oci://ghcr.io/srikanthhg  # ✅ specify it's OCI (Helm) repo
-    chart: frontend-img                # ✅ chart name
-    targetRevision: 25.03.79           # ✅ version
-    type: helm                         # ✅ explicitly declare source type
   destination:
-    server: https://kubernetes.default.svc
     namespace: test
+    server: https://kubernetes.default.svc
+  source:
+    repoURL: ghcr.io/srikanthhg
+    chart: frontend-img 
+    targetRevision: 25.03.79
+  project: default
   syncPolicy:
     automated:
       prune: true
       selfHeal: true
     syncOptions:
       - CreateNamespace=true
+---
+# apiVersion: argoproj.io/v1alpha1
+# kind: Application
+# metadata:
+#   name: mytestapp
+#   namespace: argocd
+# spec:
+#   project: default
+#   source:
+#     repoURL: oci://ghcr.io/srikanthhg  # ✅ specify it's OCI (Helm) repo
+#     chart: frontend-img                # ✅ chart name
+#     targetRevision: 25.03.79           # ✅ version
+#     type: helm                         # ✅ explicitly declare source type
+#   destination:
+#     server: https://kubernetes.default.svc
+#     namespace: test
+#   syncPolicy:
+#     automated:
+#       prune: true
+#       selfHeal: true
+#     syncOptions:
+#       - CreateNamespace=true
 
