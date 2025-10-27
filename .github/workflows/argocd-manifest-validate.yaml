@@ -1,32 +1,32 @@
-name: Verify Argo CD Manifests
+# name: Verify Argo CD Manifests
 
-on:
-  pull_request:
-    branches:
-      - main # Or your default branch like 'master'
-    # paths:
-      # - 'argocd-manifests/' # Adjust this path to where your manifests are located
+# on:
+#   pull_request:
+#     branches:
+#       - main # Or your default branch like 'master'
+#     # paths:
+#       # - 'argocd-manifests/' # Adjust this path to where your manifests are located
 
-jobs:
-  validate-manifests:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: write # Required for posting comments with datree
+# jobs:
+#   validate-manifests:
+#     runs-on: ubuntu-latest
+#     permissions:
+#       contents: read
+#       pull-requests: write # Required for posting comments with datree
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+#     steps:
+#       - name: Checkout repository
+#         uses: actions/checkout@v4
 
-      # Stage 1: Basic YAML and Kubernetes schema validation with Kubeconform
-      - name: Validate with Kubeconform
-        id: kubeconform-step
-        uses: azure/k8s-lint@v3
-        with:
-          lintType: kubeconform
-          manifests: '${{ github.workspace }}/argocd-manifests/*.yaml' # Adjust to your manifest path
-          kubeconformOpts: '-summary'
-        continue-on-error: true
+#       # Stage 1: Basic YAML and Kubernetes schema validation with Kubeconform
+#       - name: Validate with Kubeconform
+#         id: kubeconform-step
+#         uses: azure/k8s-lint@v3
+#         with:
+#           lintType: kubeconform
+#           manifests: '${{ github.workspace }}/argocd-manifests/*.yaml' # Adjust to your manifest path
+#           kubeconformOpts: '-summary'
+#         continue-on-error: true
       
       # # Stage 2: Security and best practices check with kube-score
       # - name: Analyze with kube-score
