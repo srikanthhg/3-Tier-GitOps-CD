@@ -9,20 +9,16 @@ on:
 
 jobs:
   validate-argocd:
-    name: Validate ArgoCD Application Manifests
     runs-on: ubuntu-latest
     steps:
       - name: 🛎️ Checkout repository
         uses: actions/checkout@v4
 
-      - name: 📦 Install validation tools
+      - name: 📦 Install tools
         run: |
-          echo "Installing yq (YAML processor)..."
-          curl -L "https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64" -o /usr/local/bin/yq
+          curl -L https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -o /usr/local/bin/yq
           chmod +x /usr/local/bin/yq
-
-          echo "Installing kubeconform (Kubernetes schema validator)..."
-          curl -L "https://github.com/yannh/kubeconform/releases/latest/download/kubeconform-linux-amd64.tar.gz" | tar xz
+          curl -L https://github.com/yannh/kubeconform/releases/latest/download/kubeconform-linux-amd64.tar.gz | tar xz
           sudo mv kubeconform /usr/local/bin/
           chmod +x /usr/local/bin/kubeconform
 
@@ -31,27 +27,31 @@ jobs:
           shopt -s nullglob
           yaml_files=(argocd-manifests/**/*.{yaml,yml})
           if [ ${#yaml_files[@]} -eq 0 ]; then
-            echo "⚠️ No YAML files found in 'argocd-manifests/'. Skipping validation."
+            echo "⚠️ No YAML files found. Skipping."
             exit 0
           fi
-
-          echo "Found ${#yaml_files[@]} YAML file(s) to validate:"
           for f in "${yaml_files[@]}"; do
-            echo "  → $f"
-            yq eval '.' "$f" >/dev/null || { echo "❌ Invalid YAML syntax in $f"; exit 1; }
+            echo "→ Validating YAML: $f"
+            yq eval '.' "$f" >/dev/null || { echo "❌ Invalid YAML in $f"; exit 1; }
           done
-          echo "✅ All YAML files are syntactically valid."
+          echo "✅ YAML syntax OK."
 
-      - name: 📥 Download Argo CD CRDs
+      - name: 📥 Extract Argo CD CRDs
         run: |
           mkdir -p schemas/crds
-          echo "Downloading Argo CD Application CRD..."
-          curl -sL https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/crds/application-crd.yaml -o schemas/crds/application-crd.yaml
+          curl -sL https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/crds/application-crd.yaml -o crds.yaml
 
-          echo "Downloading Argo CD AppProject CRD..."
-          curl -sL https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/crds/appproject-crd.yaml -o schemas/crds/appproject-crd.yaml
+          # Extract individual CRDs
+          yq eval 'select(.kind == "CustomResourceDefinition" and .spec.names.kind == "Application")' crds.yaml > schemas/crds/argoproj.io_applications.yaml
+          yq eval 'select(.kind == "CustomResourceDefinition" and .spec.names.kind == "AppProject")' crds.yaml > schemas/crds/argoproj.io_appprojects.yaml
 
-      - name: 🧠 Validate against Kubernetes + Argo CD schemas
+          # Confirm
+          if [ ! -s schemas/crds/argoproj.io_applications.yaml ]; then
+            echo "❌ Failed to extract Application CRD"
+            exit 1
+          fi
+
+      - name: 🧠 Validate with kubeconform
         run: |
           kubeconform \
             -summary \
@@ -61,4 +61,4 @@ jobs:
             -schema-location "crd://schemas/crds" \
             argocd-manifests/
 
-          echo "✅ All manifests passed schema validation!"
+          echo "✅ Schema validation passed!"
