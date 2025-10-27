@@ -4,46 +4,44 @@ on:
   workflow_dispatch:
 
 jobs:
-  validate:
-    name: Validate Argo CD YAMLs
+  validate-argocd-manifests:
     runs-on: ubuntu-latest
 
     steps:
-      - name: 🧩 Checkout repository
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: 🧰 Install tools
+      - name: Install dependencies
         run: |
-          sudo apt-get update -qq
+          sudo apt-get update -y
           sudo apt-get install -y jq curl
-          # Install yq (YAML parser)
-          sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
-          sudo chmod +x /usr/local/bin/yq
-          # Install kubeconform for Kubernetes schema validation
-          curl -L -o kubeconform.tar.gz https://github.com/yannh/kubeconform/releases/latest/download/kubeconform-linux-amd64.tar.gz
-          tar -xzf kubeconform.tar.gz
-          sudo mv kubeconform /usr/local/bin/
+          curl -sLo /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+          chmod +x /usr/local/bin/yq
+          curl -sLo /usr/local/bin/kubeconform https://github.com/yannh/kubeconform/releases/latest/download/kubeconform-linux-amd64
+          chmod +x /usr/local/bin/kubeconform
 
       - name: 🔍 Validate YAML syntax
         run: |
-          echo "🔍 Checking YAML syntax in argocd-manifests/..."
-          find argocd-manifests -type f \( -name "*.yaml" -o -name "*.yml" \) | while read f; do
+          echo "🔍 Validating YAML syntax in argocd-manifests/..."
+          for f in $(find argocd-manifests -type f \( -name "*.yaml" -o -name "*.yml" \)); do
             echo "→ Checking $f"
-            if ! yq eval '.' "$f" >/dev/null 2>&1; then
-              echo "❌ Invalid YAML syntax in $f"
-              exit 1
-            fi
+            yq eval '.' $f > /dev/null 2>&1 || { echo "❌ Invalid YAML syntax in $f"; exit 1; }
           done
           echo "✅ All YAML files are syntactically valid."
 
-      - name: 🧠 Validate Kubernetes schema with Kubeconform
+      - name: 🧠 Validate Kubernetes + Argo CD schemas
         run: |
-          echo "🧠 Validating Kubernetes schemas..."
-          kubeconform -summary -strict -output text -schema-location default argocd-manifests/
-          echo "✅ All manifests are schema-valid."
-
-      - name: 🎉 Summary
-        if: success()
-        run: |
-          echo "✅ All Argo CD manifests passed validation!"
-          echo "🎉 Ready to merge and deploy safely."
+          echo "🧠 Validating Kubernetes + Argo CD schemas..."
+          mkdir -p schemas
+          curl -sL https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/crds/application-crd.yaml -o schemas/application-crd.yaml
+          curl -sL https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/crds/appproject-crd.yaml -o schemas/appproject-crd.yaml
+          
+          kubeconform \
+            -summary \
+            -strict \
+            -output text \
+            -schema-location default \
+            -schema-location file://schemas \
+            argocd-manifests/
+          
+          echo "✅ All manifests are schema-valid (including Argo CD CRDs)."
