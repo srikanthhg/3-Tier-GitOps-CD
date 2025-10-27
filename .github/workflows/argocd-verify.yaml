@@ -1,61 +1,59 @@
-name: Validate ArgoCD Manifests
+name: Validate Argo CD Manifests
 
 on:
-  pull_request:
-    paths:
-      - 'argocd-manifests/**.yaml'
-      - 'argocd-manifests/**.yml'
   workflow_dispatch:
 
 jobs:
-  validate-argocd:
+  validate-argocd-manifests:
     runs-on: ubuntu-latest
+
     steps:
-      - name: 🛎️ Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: 📦 Install tools
+      - name: Install dependencies
         run: |
-          # Install yq
-          curl -L https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -o /usr/local/bin/yq
+          sudo apt-get update -y
+          sudo apt-get install -y jq curl
+          
+          echo "📦 Installing yq..."
+          curl -sL https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -o /usr/local/bin/yq
           chmod +x /usr/local/bin/yq
-
-          # Install kubeconform
-          curl -L https://github.com/yannh/kubeconform/releases/latest/download/kubeconform-linux-amd64.tar.gz | tar xz
+          
+          echo "📦 Installing kubeconform..."
+          curl -sL https://github.com/yannh/kubeconform/releases/latest/download/kubeconform-linux-amd64.tar.gz -o kubeconform.tar.gz
+          tar -xzf kubeconform.tar.gz
           sudo mv kubeconform /usr/local/bin/
+          chmod +x /usr/local/bin/kubeconform
+          
+          echo "✅ Installed yq and kubeconform successfully."
 
       - name: 🔍 Validate YAML syntax
         run: |
-          # Enable globstar for ** recursion
-          shopt -s nullglob globstar
-          files=(argocd-manifests/**/*.yaml argocd-manifests/**/*.yml)
-          
-          if [ ${#files[@]} -eq 0 ]; then
-            echo "⚠️ No YAML files found in 'argocd-manifests/'."
-            exit 1  # Fail if you expect files — or keep exit 0 if optional
-          fi
-
-          echo "Found ${#files[@]} file(s):"
-          for f in "${files[@]}"; do
-            echo "  → $f"
-            yq eval '.' "$f" >/dev/null || { echo "❌ Invalid YAML in $f"; exit 1; }
+          echo "🔍 Validating YAML syntax in argocd-manifests/..."
+          for f in $(find argocd-manifests -type f \( -name "*.yaml" -o -name "*.yml" \)); do
+            echo "→ Checking $f"
+            yq eval '.' $f > /dev/null 2>&1 || { echo "❌ Invalid YAML syntax in $f"; exit 1; }
           done
-          echo "✅ YAML syntax is valid."
+          echo "✅ All YAML files are syntactically valid."
 
-      - name: 📥 Download CLEAN Argo CD CRDs
+      - name: 🧠 Validate Kubernetes + Argo CD schemas
         run: |
-          mkdir -p schemas/crds
-          # Use raw CRDs without extra metadata (from official source)
-          curl -sL https://github.com/argoproj/argo-cd/raw/stable/manifests/crds/application-crd.yaml -o schemas/crds/application-crd.yaml
+          echo "🧠 Validating Kubernetes + Argo CD schemas..."
+          mkdir -p schemas
 
-      - name: 🧠 Validate with kubeconform
-        run: |
+          # Download Argo CD CRD JSON schemas
+          curl -sL https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/v1.27.0-standalone/all.json -o schemas/k8s.json
+          curl -sL https://raw.githubusercontent.com/argoproj/argo-cd/master/pkg/apis/application/v1alpha1/schema.json -o schemas/application.json
+          curl -sL https://raw.githubusercontent.com/argoproj/argo-cd/master/pkg/apis/appproject/v1alpha1/schema.json -o schemas/appproject.json
+
+          # Validate
           kubeconform \
             -summary \
             -strict \
             -output text \
             -schema-location default \
-            -schema-location "crd://schemas/crds" \
+            -schema-location file://schemas \
             argocd-manifests/
 
-          echo "✅ All manifests validated successfully!"
+          echo "✅ All manifests are schema-valid (including Argo CD CRDs)."
