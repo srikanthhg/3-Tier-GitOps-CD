@@ -41,15 +41,19 @@ jobs:
         run: |
           echo "🧠 Validating Kubernetes + Argo CD schemas..."
           mkdir -p schemas
-          curl -sL https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/crds/application-crd.yaml -o schemas/application-crd.yaml
-          curl -sL https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/crds/appproject-crd.yaml -o schemas/appproject-crd.yaml
-          
-          /usr/local/bin/kubeconform \
+
+          # Download Argo CD CRD JSON schemas
+          curl -sL https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/v1.27.0-standalone/all.json -o schemas/k8s.json
+          curl -sL https://raw.githubusercontent.com/argoproj/argo-cd/master/pkg/apis/application/v1alpha1/schema.json -o schemas/application.json
+          curl -sL https://raw.githubusercontent.com/argoproj/argo-cd/master/pkg/apis/appproject/v1alpha1/schema.json -o schemas/appproject.json
+
+          # Validate
+          kubeconform \
             -summary \
             -strict \
             -output text \
             -schema-location default \
             -schema-location file://schemas \
             argocd-manifests/
-          
+
           echo "✅ All manifests are schema-valid (including Argo CD CRDs)."
