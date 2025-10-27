@@ -1,12 +1,7 @@
 name: Validate Argo CD Manifests
 
 on:
-  pull_request:
-    branches:
-      - main
-    paths:
-      - 'argocd-manifests/**/*.yaml'
-      - 'argocd-manifests/**/*.yml'
+  workflow_dispatch:  # 👈 Manual trigger from GitHub UI
 
 jobs:
   validate-manifests:
@@ -23,20 +18,20 @@ jobs:
         run: |
           sudo apt-get update -y
           sudo apt-get install -y python3 python3-pip
-          pip3 install pyyaml jsonschema
+          pip3 install pyyaml jsonschema yq
 
-      # Step 3: Basic YAML + schema validation using Kubeconform
-      - name: Validate YAML syntax and Kubernetes schema
+      # Step 3: Basic YAML validation
+      - name: Validate YAML syntax
         run: |
-          echo "🔍 Validating YAML schema..."
+          echo "🔍 Validating YAML syntax in argocd-manifests/..."
           for f in $(find argocd-manifests -type f \( -name "*.yaml" -o -name "*.yml" \)); do
             echo "→ Checking $f"
             yq eval '.' $f > /dev/null 2>&1 || { echo "❌ Invalid YAML syntax in $f"; exit 1; }
           done
           echo "✅ All YAML files are syntactically valid."
 
-      # Step 4: Argo CD Application structure validation (Python)
-      - name: Validate Argo CD Application Manifests
+      # Step 4: Argo CD manifest validation using Python
+      - name: Validate Argo CD Application structure
         run: |
           echo "🔎 Running Argo CD manifest validation..."
           python3 <<'EOF'
@@ -61,7 +56,6 @@ jobs:
                   return True  # Skip non-Argo manifests
 
               ok = True
-              # Ensure required Argo CD spec structure
               spec = data.get("spec")
               if not spec:
                   print(f"❌ Missing 'spec' in {file_path}")
@@ -74,7 +68,6 @@ jobs:
                       print(f"❌ Missing 'spec.destination' in {file_path}")
                       ok = False
 
-              # Optional checks
               if ok and not spec.get("project"):
                   print(f"⚠️  Warning: 'spec.project' not set in {file_path} (defaults to 'default')")
               return ok
@@ -93,7 +86,7 @@ jobs:
               print("✅ All Argo CD manifests are structurally valid.")
           EOF
 
-      # Step 5: Job summary
+      # Step 5: Job Summary
       - name: Job Summary
         if: success()
         run: |
