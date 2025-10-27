@@ -1,59 +1,64 @@
-name: Validate Argo CD Manifests
+name: Validate ArgoCD Manifests
 
 on:
+  pull_request:
+    paths:
+      - 'argocd-manifests/**.yaml'
+      - 'argocd-manifests/**.yml'
   workflow_dispatch:
 
 jobs:
-  validate-argocd-manifests:
+  validate-argocd:
+    name: Validate ArgoCD Application Manifests
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repository
+      - name: 🛎️ Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install dependencies
+      - name: 📦 Install validation tools
         run: |
-          sudo apt-get update -y
-          sudo apt-get install -y jq curl
-          
-          echo "📦 Installing yq..."
-          curl -sL https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -o /usr/local/bin/yq
+          echo "Installing yq (YAML processor)..."
+          curl -L "https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64" -o /usr/local/bin/yq
           chmod +x /usr/local/bin/yq
-          
-          echo "📦 Installing kubeconform..."
-          curl -sL https://github.com/yannh/kubeconform/releases/latest/download/kubeconform-linux-amd64.tar.gz -o kubeconform.tar.gz
-          tar -xzf kubeconform.tar.gz
+
+          echo "Installing kubeconform (Kubernetes schema validator)..."
+          curl -L "https://github.com/yannh/kubeconform/releases/latest/download/kubeconform-linux-amd64.tar.gz" | tar xz
           sudo mv kubeconform /usr/local/bin/
           chmod +x /usr/local/bin/kubeconform
-          
-          echo "✅ Installed yq and kubeconform successfully."
 
       - name: 🔍 Validate YAML syntax
         run: |
-          echo "🔍 Validating YAML syntax in argocd-manifests/..."
-          for f in $(find argocd-manifests -type f \( -name "*.yaml" -o -name "*.yml" \)); do
-            echo "→ Checking $f"
-            yq eval '.' $f > /dev/null 2>&1 || { echo "❌ Invalid YAML syntax in $f"; exit 1; }
+          shopt -s nullglob
+          yaml_files=(argocd-manifests/**/*.{yaml,yml})
+          if [ ${#yaml_files[@]} -eq 0 ]; then
+            echo "⚠️ No YAML files found in 'argocd-manifests/'. Skipping validation."
+            exit 0
+          fi
+
+          echo "Found ${#yaml_files[@]} YAML file(s) to validate:"
+          for f in "${yaml_files[@]}"; do
+            echo "  → $f"
+            yq eval '.' "$f" >/dev/null || { echo "❌ Invalid YAML syntax in $f"; exit 1; }
           done
           echo "✅ All YAML files are syntactically valid."
 
-      - name: 🧠 Validate Kubernetes + Argo CD schemas
+      - name: 📥 Download Argo CD CRDs
         run: |
-          echo "🧠 Validating Kubernetes + Argo CD schemas..."
-          mkdir -p schemas
+          mkdir -p schemas/crds
+          echo "Downloading Argo CD Application CRD..."
+          curl -sL https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/crds/application-crd.yaml -o schemas/crds/application-crd.yaml
 
-          # Download Argo CD CRD JSON schemas
-          curl -sL https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/v1.27.0-standalone/all.json -o schemas/k8s.json
-          curl -sL https://raw.githubusercontent.com/argoproj/argo-cd/master/pkg/apis/application/v1alpha1/schema.json -o schemas/application.json
-          curl -sL https://raw.githubusercontent.com/argoproj/argo-cd/master/pkg/apis/appproject/v1alpha1/schema.json -o schemas/appproject.json
+          echo "Downloading Argo CD AppProject CRD..."
+          curl -sL https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/crds/appproject-crd.yaml -o schemas/crds/appproject-crd.yaml
 
-          # Validate
+      - name: 🧠 Validate against Kubernetes + Argo CD schemas
+        run: |
           kubeconform \
             -summary \
             -strict \
             -output text \
             -schema-location default \
-            -schema-location file://schemas \
+            -schema-location "crd://schemas/crds" \
             argocd-manifests/
 
-          echo "✅ All manifests are schema-valid (including Argo CD CRDs)."
+          echo "✅ All manifests passed schema validation!"
