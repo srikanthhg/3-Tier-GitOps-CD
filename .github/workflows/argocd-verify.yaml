@@ -11,7 +11,7 @@ jobs:
   validate-argocd:
     runs-on: ubuntu-latest
     steps:
-      - name: 🛎️ Checkout repository
+      - name: 🛎️ Checkout code
         uses: actions/checkout@v4
 
       - name: 📦 Install tools
@@ -20,36 +20,24 @@ jobs:
           chmod +x /usr/local/bin/yq
           curl -L https://github.com/yannh/kubeconform/releases/latest/download/kubeconform-linux-amd64.tar.gz | tar xz
           sudo mv kubeconform /usr/local/bin/
-          chmod +x /usr/local/bin/kubeconform
 
       - name: 🔍 Validate YAML syntax
         run: |
           shopt -s nullglob
-          yaml_files=(argocd-manifests/**/*.{yaml,yml})
-          if [ ${#yaml_files[@]} -eq 0 ]; then
+          files=(argocd-manifests/**/*.{yaml,yml})
+          if [ ${#files[@]} -eq 0 ]; then
             echo "⚠️ No YAML files found. Skipping."
             exit 0
           fi
-          for f in "${yaml_files[@]}"; do
+          for f in "${files[@]}"; do
             echo "→ Validating YAML: $f"
             yq eval '.' "$f" >/dev/null || { echo "❌ Invalid YAML in $f"; exit 1; }
           done
-          echo "✅ YAML syntax OK."
 
-      - name: 📥 Extract Argo CD CRDs
+      - name: 📥 Download Argo CD CRDs (single file, multi-CRD)
         run: |
           mkdir -p schemas/crds
-          curl -sL https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/crds/application-crd.yaml -o crds.yaml
-
-          # Extract individual CRDs
-          yq eval 'select(.kind == "CustomResourceDefinition" and .spec.names.kind == "Application")' crds.yaml > schemas/crds/argoproj.io_applications.yaml
-          yq eval 'select(.kind == "CustomResourceDefinition" and .spec.names.kind == "AppProject")' crds.yaml > schemas/crds/argoproj.io_appprojects.yaml
-
-          # Confirm
-          if [ ! -s schemas/crds/argoproj.io_applications.yaml ]; then
-            echo "❌ Failed to extract Application CRD"
-            exit 1
-          fi
+          curl -sL https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/crds/application-crd.yaml -o schemas/crds/argocd-crds.yaml
 
       - name: 🧠 Validate with kubeconform
         run: |
@@ -61,4 +49,4 @@ jobs:
             -schema-location "crd://schemas/crds" \
             argocd-manifests/
 
-          echo "✅ Schema validation passed!"
+          echo "✅ Validation passed!"
