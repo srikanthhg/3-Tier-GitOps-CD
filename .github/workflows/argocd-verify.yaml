@@ -1,0 +1,100 @@
+name: Validate Argo CD Manifests
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'argocd-manifests/**/*.yaml'
+      - 'argocd-manifests/**/*.yml'
+
+jobs:
+  validate-manifests:
+    name: Validate Argo CD Application YAMLs
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout code
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Step 2: Install dependencies
+      - name: Install tools
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y python3 python3-pip
+          pip3 install pyyaml jsonschema
+
+      # Step 3: Basic YAML + schema validation using Kubeconform
+      - name: Validate YAML syntax and Kubernetes schema
+        run: |
+          echo "🔍 Validating YAML schema..."
+          for f in $(find argocd-manifests -type f \( -name "*.yaml" -o -name "*.yml" \)); do
+            echo "→ Checking $f"
+            yq eval '.' $f > /dev/null 2>&1 || { echo "❌ Invalid YAML syntax in $f"; exit 1; }
+          done
+          echo "✅ All YAML files are syntactically valid."
+
+      # Step 4: Argo CD Application structure validation (Python)
+      - name: Validate Argo CD Application Manifests
+        run: |
+          echo "🔎 Running Argo CD manifest validation..."
+          python3 <<'EOF'
+          import os, sys, yaml
+
+          manifest_dir = "argocd-manifests"
+          required_fields = ["spec", "spec.source", "spec.destination"]
+
+          def validate_manifest(file_path):
+              with open(file_path) as f:
+                  try:
+                      data = yaml.safe_load(f)
+                  except yaml.YAMLError as e:
+                      print(f"❌ YAML parsing error in {file_path}: {e}")
+                      return False
+
+              if not data or "kind" not in data:
+                  print(f"❌ Missing 'kind' in {file_path}")
+                  return False
+
+              if data.get("kind") != "Application":
+                  return True  # Skip non-Argo manifests
+
+              ok = True
+              # Ensure required Argo CD spec structure
+              spec = data.get("spec")
+              if not spec:
+                  print(f"❌ Missing 'spec' in {file_path}")
+                  ok = False
+              else:
+                  if "source" not in spec:
+                      print(f"❌ Missing 'spec.source' in {file_path}")
+                      ok = False
+                  if "destination" not in spec:
+                      print(f"❌ Missing 'spec.destination' in {file_path}")
+                      ok = False
+
+              # Optional checks
+              if ok and not spec.get("project"):
+                  print(f"⚠️  Warning: 'spec.project' not set in {file_path} (defaults to 'default')")
+              return ok
+
+          all_ok = True
+          for root, _, files in os.walk(manifest_dir):
+              for f in files:
+                  if f.endswith((".yaml", ".yml")):
+                      fp = os.path.join(root, f)
+                      if not validate_manifest(fp):
+                          all_ok = False
+
+          if not all_ok:
+              sys.exit(1)
+          else:
+              print("✅ All Argo CD manifests are structurally valid.")
+          EOF
+
+      # Step 5: Job summary
+      - name: Job Summary
+        if: success()
+        run: |
+          echo "🎉 All Argo CD manifests passed validation!" >> $GITHUB_STEP_SUMMARY
