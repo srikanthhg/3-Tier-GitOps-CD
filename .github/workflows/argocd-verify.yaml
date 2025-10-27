@@ -15,10 +15,18 @@ jobs:
         run: |
           sudo apt-get update -y
           sudo apt-get install -y jq curl
-          curl -sLo /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+          
+          echo "📦 Installing yq..."
+          curl -sL https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -o /usr/local/bin/yq
           chmod +x /usr/local/bin/yq
-          curl -sLo /usr/local/bin/kubeconform https://github.com/yannh/kubeconform/releases/latest/download/kubeconform-linux-amd64
+          
+          echo "📦 Installing kubeconform..."
+          curl -sL https://github.com/yannh/kubeconform/releases/latest/download/kubeconform-linux-amd64.tar.gz -o kubeconform.tar.gz
+          tar -xzf kubeconform.tar.gz
+          sudo mv kubeconform /usr/local/bin/
           chmod +x /usr/local/bin/kubeconform
+          
+          echo "✅ Installed yq and kubeconform successfully."
 
       - name: 🔍 Validate YAML syntax
         run: |
@@ -36,7 +44,7 @@ jobs:
           curl -sL https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/crds/application-crd.yaml -o schemas/application-crd.yaml
           curl -sL https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/crds/appproject-crd.yaml -o schemas/appproject-crd.yaml
           
-          kubeconform \
+          /usr/local/bin/kubeconform \
             -summary \
             -strict \
             -output text \
