@@ -14,13 +14,13 @@ jobs:
       - name: 🛎️ Checkout repository
         uses: actions/checkout@v4
 
-      - name: 📦 Install tools
+      - name: 📦 Install yq and kubeconform
         run: |
-          # Install yq for YAML syntax check
+          # Install yq
           curl -L https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -o /usr/local/bin/yq
           chmod +x /usr/local/bin/yq
 
-          # Install kubeconform for schema validation
+          # Install kubeconform
           curl -L https://github.com/yannh/kubeconform/releases/latest/download/kubeconform-linux-amd64.tar.gz | tar xz
           sudo mv kubeconform /usr/local/bin/
 
@@ -32,19 +32,20 @@ jobs:
             exit 1
           fi
 
-          echo "Found YAML file(s):"
-          echo "$files"
+          echo "Validating YAML files:"
           for f in $files; do
-            echo "→ Validating syntax: $f"
+            echo "→ $f"
             yq eval '.' "$f" >/dev/null || { echo "❌ Invalid YAML in $f"; exit 1; }
           done
           echo "✅ YAML syntax is valid."
 
-      - name: 📥 Download official Argo CD CRDs
+      - name: 📥 Fetch and extract Argo CD CRDs (for v2.10+)
         run: |
           mkdir -p crds
-          # This is the real, official CRD file that includes Application and AppProject
-          curl -sL https://github.com/argoproj/argo-cd/raw/stable/manifests/crds/application-crd.yaml -o crds/argocd-crds.yaml
+          # Download the CRD file (which is a 'List' in v2.10+)
+          curl -sL https://github.com/argoproj/argo-cd/raw/stable/manifests/crds/application-crd.yaml -o crds.yaml
+          # Extract each CRD from the .items array
+          yq -N '.items[]' crds.yaml > crds/argocd-crds.yaml
 
       - name: 🧠 Validate against Kubernetes + Argo CD schemas
         run: |
@@ -56,4 +57,4 @@ jobs:
             -schema-location "crd://crds" \
             argocd-manifests/
 
-          echo "✅ All manifests passed schema validation!"
+          echo "✅ All manifests passed validation!"
