@@ -16,28 +16,37 @@ jobs:
 
       - name: 📦 Install tools
         run: |
+          # Install yq
           curl -L https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -o /usr/local/bin/yq
           chmod +x /usr/local/bin/yq
+
+          # Install kubeconform
           curl -L https://github.com/yannh/kubeconform/releases/latest/download/kubeconform-linux-amd64.tar.gz | tar xz
           sudo mv kubeconform /usr/local/bin/
 
       - name: 🔍 Validate YAML syntax
         run: |
-          shopt -s nullglob
-          files=(argocd-manifests/**/*.{yaml,yml})
+          # Enable globstar for ** recursion
+          shopt -s nullglob globstar
+          files=(argocd-manifests/**/*.yaml argocd-manifests/**/*.yml)
+          
           if [ ${#files[@]} -eq 0 ]; then
-            echo "⚠️ No YAML files found. Skipping."
-            exit 0
+            echo "⚠️ No YAML files found in 'argocd-manifests/'."
+            exit 1  # Fail if you expect files — or keep exit 0 if optional
           fi
+
+          echo "Found ${#files[@]} file(s):"
           for f in "${files[@]}"; do
-            echo "→ Validating YAML: $f"
+            echo "  → $f"
             yq eval '.' "$f" >/dev/null || { echo "❌ Invalid YAML in $f"; exit 1; }
           done
+          echo "✅ YAML syntax is valid."
 
-      - name: 📥 Download Argo CD CRDs (single file, multi-CRD)
+      - name: 📥 Download CLEAN Argo CD CRDs
         run: |
           mkdir -p schemas/crds
-          curl -sL https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/crds/application-crd.yaml -o schemas/crds/argocd-crds.yaml
+          # Use raw CRDs without extra metadata (from official source)
+          curl -sL https://github.com/argoproj/argo-cd/raw/stable/manifests/crds/application-crd.yaml -o schemas/crds/application-crd.yaml
 
       - name: 🧠 Validate with kubeconform
         run: |
@@ -49,4 +58,4 @@ jobs:
             -schema-location "crd://schemas/crds" \
             argocd-manifests/
 
-          echo "✅ Validation passed!"
+          echo "✅ All manifests validated successfully!"
