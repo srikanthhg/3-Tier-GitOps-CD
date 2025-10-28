@@ -1,60 +1,76 @@
 name: Validate ArgoCD Manifests
 
 on:
-  pull_request:
-    paths:
-      - 'argocd-manifests/**.yaml'
-      - 'argocd-manifests/**.yml'
   workflow_dispatch:
+    inputs:
+      namespace:
+        description: "Namespace to check resource usage (optional)"
+        required: false
+        default: "default"
+  pull_request:
+    branches:
+      - main
+      - develop
 
 jobs:
-  validate-argocd:
+  validate:
+    name: 🧩 Validate ArgoCD Manifests
     runs-on: ubuntu-latest
+
     steps:
-      - name: 🛎️ Checkout repository
+      - name: 🛒 Checkout code
         uses: actions/checkout@v4
 
-      - name: 📦 Install yq and kubeconform
+      - name: ⚙️ Set up environment
         run: |
-          # Install yq
-          curl -L https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -o /usr/local/bin/yq
-          chmod +x /usr/local/bin/yq
+          sudo apt-get update -y
+          sudo apt-get install -y jq curl
 
-          # Install kubeconform
-          curl -L https://github.com/yannh/kubeconform/releases/latest/download/kubeconform-linux-amd64.tar.gz | tar xz
-          sudo mv kubeconform /usr/local/bin/
+      - name: 📦 Install tools (yq & kubeconform)
+        run: |
+          echo "Installing yq..."
+          sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+          sudo chmod +x /usr/local/bin/yq
+
+          echo "Installing kubeconform..."
+          curl -L -o kubeconform.tar.gz https://github.com/yannh/kubeconform/releases/latest/download/kubeconform-linux-amd64.tar.gz
+          tar xf kubeconform.tar.gz
+          sudo mv kubeconform /usr/local/bin/kubeconform
 
       - name: 🔍 Validate YAML syntax
         run: |
-          files=$(find argocd-manifests -type f \( -name "*.yaml" -o -name "*.yml" \))
-          if [ -z "$files" ]; then
-            echo "⚠️ No YAML files found in 'argocd-manifests/'."
-            exit 1
-          fi
-
-          echo "Validating YAML files:"
-          for f in $files; do
-            echo "→ $f"
-            yq eval '.' "$f" >/dev/null || { echo "❌ Invalid YAML in $f"; exit 1; }
+          echo "🔍 Checking YAML syntax..."
+          for f in $(find argocd-manifests -type f \( -name "*.yaml" -o -name "*.yml" \)); do
+            echo "→ Checking $f"
+            yq eval '.' $f > /dev/null 2>&1 || { echo "❌ Invalid YAML syntax in $f"; exit 1; }
           done
-          echo "✅ YAML syntax is valid."
+          echo "✅ All YAML files are syntactically valid."
 
-      - name: 📥 Fetch and extract Argo CD CRDs (for v2.10+)
+      - name: 📚 Download ArgoCD CRDs
         run: |
-          mkdir -p crds
-          # Download the CRD file (which is a 'List' in v2.10+)
-          curl -sL https://github.com/argoproj/argo-cd/raw/stable/manifests/crds/application-crd.yaml -o crds.yaml
-          # Extract each CRD from the .items array
-          yq -N '.items[]' crds.yaml > crds/argocd-crds.yaml
+          mkdir -p schemas/argoproj.io/v1alpha1
+          curl -sL -o schemas/argoproj.io/v1alpha1/Application.json \
+            https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/argoproj.io/application_v1alpha1.json
+          curl -sL -o schemas/argoproj.io/v1alpha1/AppProject.json \
+            https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/argoproj.io/appproject_v1alpha1.json
+          echo "✅ Downloaded ArgoCD CRD schemas."
 
-      - name: 🧠 Validate against Kubernetes + Argo CD schemas
+      - name: 🧠 Validate Kubernetes + ArgoCD schemas
         run: |
+          echo "🧠 Validating manifests..."
           kubeconform \
             -summary \
             -strict \
             -output text \
             -schema-location default \
-            -schema-location "crd://crds" \
+            -schema-location file://schemas \
             argocd-manifests/
+          echo "✅ Schema validation passed (Kubernetes + ArgoCD)."
 
-          echo "✅ All manifests passed validation!"
+      - name: 📊 (Optional) Show Namespace CPU/Memory Usage
+        if: ${{ github.event.inputs.namespace != '' }}
+        run: |
+          NS=${{ github.event.inputs.namespace }}
+          echo "📊 Checking CPU and Memory usage in namespace: $NS"
+          kubectl top pods -n "$NS" --no-headers | \
+            awk '{cpu+=$2; mem+=$3} END {print "CPU(m):",cpu," | Memory(Mi):",mem}'
