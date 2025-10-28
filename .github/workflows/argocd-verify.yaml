@@ -49,11 +49,12 @@ jobs:
       - name: 📚 Download ArgoCD CRDs
         run: |
           mkdir -p schemas/argoproj.io/v1alpha1
-          curl -sL -o schemas/argoproj.io/v1alpha1/Application.json \
+          curl -sL -o schemas/argoproj.io/v1alpha1/application.json \
             https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/argoproj.io/application_v1alpha1.json
-          curl -sL -o schemas/argoproj.io/v1alpha1/AppProject.json \
+          curl -sL -o schemas/argoproj.io/v1alpha1/appproject.json \
             https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/argoproj.io/appproject_v1alpha1.json
-          echo "✅ Downloaded ArgoCD CRD schemas."
+          echo "✅ Downloaded ArgoCD CRD schemas (with correct path)."
+
 
       - name: 🧠 Validate Kubernetes + ArgoCD schemas
         run: |
