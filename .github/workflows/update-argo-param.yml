@@ -70,7 +70,7 @@ jobs:
             until [ "$GIT_RETRY" -ge 10]
             do
               git add -A
-              git diff --quiet & git diff --staged --quiet || git commit -m "@${{ github.actor}}
+              git diff --quiet & git diff --staged --quiet || git commit -m "@${{ github.actor}}"
               git config pull.rebase false # merge (the default strategy)
               git push && break # substitute your command here
               GIT_RETRY=$((GIT_RETRY+1))
