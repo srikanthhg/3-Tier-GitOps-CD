@@ -1,0 +1,26 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: mytestapp
+  namespace: argocd
+spec:
+  destination:
+    namespace: test
+    server: https://kubernetes.default.svc
+  source:
+    chart: frontend-img
+    helm:
+       parameters:
+         - name: hello
+           value: helloqa
+         - name: bye
+           value: byedev 
+    repoURL: ghcr.io/srikanthhg
+    targetRevision: 25.03.79
+  project: default
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
