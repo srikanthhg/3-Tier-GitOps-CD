@@ -41,8 +41,8 @@ jobs:
         with:
           python-version: "3.x"
 
-      - name: Install dependencies
-        run: pip install pyyaml
+      # - name: Install dependencies
+      #   run: pip install pyyaml
 
       - name: Run parameter update script
         if: ${{ inputs.action == 'add' || inputs.action == 'delete' }}
