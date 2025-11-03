@@ -7,9 +7,11 @@ on:
         description: "Action to perform (add or delete)"
         required: true
         type: choice
+        default: none
         options:
           - add
           - delete
+          - none
       application_folder_name:
         description: "Folder containing the ArgoCD application (e.g. apps/testapp)"
         required: true
