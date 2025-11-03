@@ -10,11 +10,13 @@ spec:
   source:
     chart: frontend-img
     helm:
-       parameters:
-         - name: hello
-           value: helloqa
-         - name: bye
-           value: byedev 
+      parameters:
+      - name: hello
+        value: helloqa
+      - name: bye
+        value: byedev
+      - name: city
+        value: hyderabad
     repoURL: ghcr.io/srikanthhg
     targetRevision: 25.03.79
   project: default
@@ -23,4 +25,4 @@ spec:
       prune: true
       selfHeal: true
     syncOptions:
-      - CreateNamespace=true
+    - CreateNamespace=true
