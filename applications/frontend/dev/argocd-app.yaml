@@ -17,6 +17,8 @@ spec:
         value: byedev
       - name: city
         value: hyderabad
+      - name: helo00000000
+        value: iiiiiiiiiii
     repoURL: ghcr.io/srikanthhg
     targetRevision: 25.03.79
   project: default
