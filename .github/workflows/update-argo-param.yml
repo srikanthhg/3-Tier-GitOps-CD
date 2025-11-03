@@ -68,7 +68,7 @@ jobs:
           git config user.email "noreply-bn@hello.com"
           git config user.name "srikanthg"
           GIT_RETRY=0
-            until [ "$GIT_RETRY" -ge 10]
+            until [ "$GIT_RETRY" -ge 10 ]
             do
               git add -A
               git diff --quiet & git diff --staged --quiet || git commit -m "@${{ github.actor}}"
