@@ -15,8 +15,6 @@ spec:
         value: helloqa
       - name: bye
         value: byedev
-      - name: city
-        value: hyderabad
     repoURL: ghcr.io/srikanthhg
     targetRevision: 25.03.79
   project: default
