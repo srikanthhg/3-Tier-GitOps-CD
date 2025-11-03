@@ -1,4 +1,4 @@
-name: Update ArgoCD Helm Parameters
+name: Update ArgoCD Parameters
 
 on:
   workflow_dispatch:
@@ -10,15 +10,24 @@ on:
         options:
           - add
           - delete
+      application_folder_name:
+        description: "Folder containing the ArgoCD application (e.g. apps/testapp)"
+        required: true
+      chart_name:
+        description: "Helm chart name (e.g. frontend-img)"
+        required: true
+      env_file_name:
+        description: "YAML file name (e.g. argocd-app.yaml)"
+        required: true
       key:
-        description: "Parameter name"
+        description: "Helm parameter name"
         required: true
       value:
-        description: "Parameter value (only required for add)"
+        description: "Helm parameter value (only required for add)"
         required: false
 
 jobs:
-  update-argo:
+  update-argo-params:
     runs-on: ubuntu-latest
 
     steps:
@@ -33,12 +42,21 @@ jobs:
       - name: Install dependencies
         run: pip install pyyaml
 
-      - name: Run update script
+      - name: Run parameter update script
         run: |
           if [ "${{ github.event.inputs.action }}" = "add" ]; then
-            python scripts/update_argo_params.py add "${{ github.event.inputs.key }}" "${{ github.event.inputs.value }}"
+            python3 scripts/update_argo_params.py add \
+              "${{ github.event.inputs.application_folder_name }}" \
+              "${{ github.event.inputs.chart_name }}" \
+              "${{ github.event.inputs.env_file_name }}" \
+              "${{ github.event.inputs.key }}" \
+              "${{ github.event.inputs.value }}"
           else
-            python scripts/update_argo_params.py delete "${{ github.event.inputs.key }}"
+            python3 scripts/update_argo_params.py delete \
+              "${{ github.event.inputs.application_folder_name }}" \
+              "${{ github.event.inputs.chart_name }}" \
+              "${{ github.event.inputs.env_file_name }}" \
+              "${{ github.event.inputs.key }}"
           fi
 
       - name: Commit and push changes
@@ -46,5 +64,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add .
-          git commit -m "Update ArgoCD param: ${{ github.event.inputs.action }} ${{ github.event.inputs.key }}"
+          git commit -m "ArgoCD parameter ${{ github.event.inputs.action }}: ${{ github.event.inputs.key }}"
           git push
