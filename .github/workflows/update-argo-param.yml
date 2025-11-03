@@ -45,6 +45,7 @@ jobs:
         run: pip install pyyaml
 
       - name: Run parameter update script
+        if: ${{ inputs.action == 'add' || inputs.action == 'delete' }}
         run: |
           if [ "${{ github.event.inputs.action }}" = "add" ]; then
             python3 scripts/update_argo_params.py add \
