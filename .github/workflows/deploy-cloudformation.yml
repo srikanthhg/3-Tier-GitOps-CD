@@ -22,7 +22,8 @@ jobs:
 
       - name: Deploy CloudFormation stack
         run: |
+          TEMPLATE_PATH=$(pwd)/iam-role-policy.yml
           aws cloudformation deploy \
-            --template-file iam-role-policy.yml \
+            --template-file TEMPLATE_PATH \
             --stack-name MyIamStack \
             --capabilities CAPABILITY_NAMED_IAM
