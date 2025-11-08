@@ -22,10 +22,9 @@ jobs:
 
       - name: Deploy CloudFormation stack
         run: |
-         echo "Current working directory: $(pwd)"
-         ls -R
-          # TEMPLATE_PATH=$(pwd)/iam-role-policy.yml
-          # aws cloudformation deploy \
-          #   --template-file TEMPLATE_PATH \
-          #   --stack-name MyIamStack \
-          #   --capabilities CAPABILITY_NAMED_IAM
+          TEMPLATE_PATH=$(pwd)/scripts/iam-role-policy.yml
+          echo "Deploying from: $TEMPLATE_PATH"
+          aws cloudformation deploy \
+            --template-file $TEMPLATE_PATH \
+            --stack-name MyIamStack \
+            --capabilities CAPABILITY_NAMED_IAM

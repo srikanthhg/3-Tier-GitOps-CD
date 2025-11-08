@@ -2,6 +2,20 @@ AWSTemplateFormatVersion: '2010-09-09'
 Description: Create IAM Role and attach Policy
 
 Resources:
+  MyRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: MyExampleRole
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action: sts:AssumeRole
+      Path: /
+
   MyPolicy:
     Type: AWS::IAM::Policy
     Properties:
@@ -16,20 +30,6 @@ Resources:
             Resource: "*"
       Roles:
         - !Ref MyRole
-
-  MyRole:
-    Type: AWS::IAM::Role
-    Properties:
-      RoleName: MyExampleRole
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service:
-                - ec2.amazonaws.com
-            Action: sts:AssumeRole
-      Path: /
 
 Outputs:
   RoleName:
