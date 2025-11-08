@@ -19,6 +19,8 @@ spec:
         value: byedev
       - name: city
         value: hyderabadi
+      - name: addednewkey
+        value: addednewvalue
     repoURL: ghcr.io/srikanthhg
     targetRevision: 25.03.79
   project: default
