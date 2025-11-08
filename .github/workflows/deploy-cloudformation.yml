@@ -1,6 +1,7 @@
 name: Deploy IAM Role and Policy via CloudFormation
 
 on:
+  workflow_dispatch:
   push:
     branches: [ main ]
 
