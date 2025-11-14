@@ -16,14 +16,14 @@ jobs:
       with:
         dotnet-version: '8.0.x'
 
-    # - name: Restore dependencies
-    #   run: dotnet restore
-
-    # - name: Build
-    #   run: dotnet build --no-restore --configuration Release
-
-    # - name: Run tests
-    #   run: dotnet test --no-build --verbosity normal
-    - name: download package
+    - name: Install NuGet CLI
       run: |
-        dotnet add package Microsoft.Extensions.DependencyInjection --version 10.0.0
+       wget https://dist.nuget.org/win-x86-commandline/latest/nuget.exe -O nuget.exe
+       chmod +x nuget.exe
+    
+    
+    - name: Download NuGet package and extract dependencies
+      run: |
+       mono nuget.exe install Microsoft.Extensions.DependencyInjection -Version 8.0.0 -OutputDirectory ./packages
+       echo "Dependencies for Microsoft.Extensions.DependencyInjection:"
+       cat ./packages/Microsoft.Extensions.DependencyInjection.8.0.0/Microsoft.Extensions.DependencyInjection.nuspec
