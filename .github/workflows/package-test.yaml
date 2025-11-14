@@ -16,34 +16,19 @@ jobs:
       with:
         dotnet-version: '8.0.x'
         name: CI
-
-
+      
+    - name: Install Mono (required for nuget.exe on Linux)
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y mono-complete
 
     - name: Install NuGet CLI
       run: |
-        wget https://dist.nuget.org/win-x86-commandline/latest/nuget.exe -O nuget.exe
-        chmod +x nuget.exe
-
+       wget https://dist.nuget.org/win-x86-commandline/latest/nuget.exe -O nuget.exe
+       chmod +x nuget.exe
+    
     - name: Download NuGet package and extract dependencies
       run: |
         mono nuget.exe install Microsoft.Extensions.DependencyInjection -Version 8.0.0 -OutputDirectory ./packages
         echo "Dependencies for Microsoft.Extensions.DependencyInjection:"
         cat $HOME/.nuget/packages/microsoft.extensions.dependencyinjection/8.0.0/microsoft.extensions.dependencyinjection.nuspec
-
-        
-    # - name: Install Mono (required for nuget.exe on Linux)
-    #   run: |
-    #     sudo apt-get update
-    #     sudo apt-get install -y mono-complete
-
-    # - name: Install NuGet CLI
-    #   run: |
-    #    wget https://dist.nuget.org/win-x86-commandline/latest/nuget.exe -O nuget.exe
-    #    chmod +x nuget.exe
-    
-    
-    # - name: Download NuGet package and extract dependencies
-    #   run: |
-    #    mono nuget.exe install Microsoft.Extensions.DependencyInjection -Version 8.0.0 -OutputDirectory ./packages
-    #    echo "Dependencies for Microsoft.Extensions.DependencyInjection:"
-    #    cat ./packages/Microsoft.Extensions.DependencyInjection.8.0.0/Microsoft.Extensions.DependencyInjection.nuspec
